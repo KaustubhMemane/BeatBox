@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">BeatBox</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="tag1_SongName">100</string>
+    <string name="tag2_albumName">200</string>
+    <string name="tag3_albumArt">300</string>
+    <string name="tag4_artistName">400</string>
+    <string name="tag5_songDuration">500</string>
+</resources>

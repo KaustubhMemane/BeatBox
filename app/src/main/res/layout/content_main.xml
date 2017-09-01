@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="com.kmema.android.beatbox.MainActivity"
+    tools:showIn="@layout/app_bar_main">
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recyclerView_albumSongs"
+        android:layout_width="match_parent"
+        android:layout_height="550dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        app:layout_constraintVertical_bias="1.0" />
+
+    <android.support.design.widget.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/colorATransperent"
+        android:fitsSystemWindows="true">
+
+        <android.support.design.widget.CollapsingToolbarLayout
+            android:id="@+id/MainActCollapsing_bar"
+            android:layout_width="match_parent"
+            android:layout_height="500dp"
+            android:fitsSystemWindows="true"
+            app:contentScrim="@android:drawable/screen_background_dark_transparent"
+            app:expandedTitleTextAppearance="@style/TextAppearance.Design.CollapsingToolbar.Expanded.Shadow"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed">
+
+            <ImageView
+                android:id="@+id/imageGlobalAlbumArtImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="16dp"
+                android:fitsSystemWindows="true"
+                android:scaleType="centerCrop"
+                android:src="@drawable/beat_box_logo"
+                app:layout_collapseMode="parallax"
+                tools:layout_editor_absoluteX="24dp"
+                tools:layout_editor_absoluteY="81dp" />
+        </android.support.design.widget.CollapsingToolbarLayout>
+
+        <TextView
+            android:singleLine="true"
+            android:focusableInTouchMode="true"
+            android:focusable="true"
+            android:scrollHorizontally="true"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:ellipsize="marquee"
+            android:maxLines="1"
+            android:id="@+id/tvGlobalSongName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:elegantTextHeight="true"
+            android:gravity="center"
+            android:text="No Song Playing"
+            android:textColor="@color/whiteColor"
+            android:textSize="24sp" />
+
+        <TextView
+            android:singleLine="true"
+            android:focusableInTouchMode="true"
+            android:focusable="true"
+            android:scrollHorizontally="true"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:ellipsize="marquee"
+            android:maxLines="1"
+            android:id="@+id/tvGlobalArtistName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:gravity="center"
+            android:text="no Artist"
+            android:textColor="@color/whiteColor"
+            android:textSize="16sp" />
+
+        <SeekBar
+            android:id="@+id/seekBar"
+            style="@style/Widget.AppCompat.SeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:progress="@android:integer/config_longAnimTime"
+            android:scrollIndicators="left" />
+
+        <TextView
+            android:maxLines="1"
+            android:id="@+id/tvGlobalAlbumName"
+            android:textColor="@color/whiteColor"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:text="NO Album Name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:elevation="8dp"
+            android:src="@mipmap/down_arrow" />
+        <LinearLayout
+            android:layout_marginBottom="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="bottom|center"
+            android:orientation="horizontal"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior"
+            app:layout_collapseMode="parallax">
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/btnRandom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"
+                android:layout_marginLeft="10dp"
+                android:clickable="true"
+                app:backgroundTint="@color/colorATransperent"
+                app:elevation="0dp"
+                app:fabSize="normal"
+                app:rippleColor="?android:attr/colorEdgeEffect"
+                app:srcCompat="@mipmap/shuffle_off" />
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/btnPrevious"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"
+                android:layout_marginLeft="10dp"
+                android:clickable="true"
+                app:elevation="8dp"
+                app:fabSize="normal"
+                app:rippleColor="?android:attr/colorEdgeEffect"
+                app:srcCompat="@android:drawable/ic_media_previous" />
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/btnPlay"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"
+                android:layout_marginLeft="10dp"
+                android:clickable="true"
+                app:backgroundTint="@android:color/background_light"
+                app:elevation="8dp"
+                app:fabSize="normal"
+                app:rippleColor="@color/mycolorAccent"
+                app:srcCompat="@drawable/ic_action_name" />
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/btnNext"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"
+                android:layout_marginLeft="10dp"
+                android:clickable="true"
+                app:elevation="8dp"
+                app:fabSize="normal"
+                app:rippleColor="?android:attr/colorEdgeEffect"
+                app:srcCompat="@android:drawable/ic_media_next" />
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/btnRepeat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"
+                android:layout_marginLeft="10dp"
+                android:clickable="true"
+                app:backgroundTint="@color/colorATransperent"
+                app:elevation="0dp"
+                app:fabSize="normal"
+                app:rippleColor="?android:attr/colorEdgeEffect"
+                app:srcCompat="@mipmap/repeat_off" />
+        </LinearLayout>
+
+
+    </android.support.design.widget.AppBarLayout>
+</android.support.design.widget.CoordinatorLayout>

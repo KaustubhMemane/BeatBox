@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/btnRefresh"
+            android:icon="@mipmap/refresh_logo"
+            android:title="Refresh" />
+        <item
+            android:id="@+id/btnEqualizer"
+            android:icon="@mipmap/equalizer_logo"
+            android:title="Equalizer" />
+
+        <item
+            android:id="@+id/btnShare"
+            android:icon="@mipmap/share_logo"
+            android:title="Share this App" />
+        <item
+            android:id="@+id/btnYouTube"
+            android:icon="@mipmap/youtube_logo"
+            android:title="Find Videos" />
+
+
+    </group>
+
+    <item android:title="Communicate">
+        <menu>
+            <item
+                android:id="@+id/btnStore"
+                android:icon="@mipmap/play_market_logo"
+                android:title="Store" />
+
+            <item
+                android:id="@+id/btnAboutUs"
+                android:icon="@mipmap/find_us_logo"
+                android:title="Find Us" />
+
+        </menu>
+    </item>
+
+</menu>
