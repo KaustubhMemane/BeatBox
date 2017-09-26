@@ -24,9 +24,6 @@ This Android mobile and Tablet application is still in production    phase, prob
 
 **Screenshots**
 ---------------
-![Screenshot of BeatBox Music player by ~ Icebergs ~ Kaustubh Memane](https://drive.google.com/file/d/0B_PM3Jj6LjuvdmVMcHNramxFRkU/view?usp=sharing)
+![User Interface 1](https://drive.google.com/open?id=0B_PM3Jj6LjuvdmVMcHNramxFRkU)
 
-![Sceenshot to showcase one of the UI from Beatbox App](https://drive.google.com/open?id=0B_PM3Jj6LjuvUkVVS1h5WDF0ZUU)
-
-
-
+![User Interface 2](https://drive.google.com/open?id=0B_PM3Jj6LjuvUkVVS1h5WDF0ZUU)
