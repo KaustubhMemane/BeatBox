@@ -32,5 +32,5 @@ This Android mobile and Tablet application is still in production    phase, prob
 **Find More Information on**
 ------------------------
 
-**[kaustubhmemane.com](kaustubhmemane.com)**
+ - kaustubhmemane.com
 
