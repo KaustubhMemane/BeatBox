@@ -1,7 +1,9 @@
 package com.kmema.android.beatbox;
 import android.Manifest;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -35,79 +37,114 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.kmema.android.beatbox.Adapter.RecyclerViewAdapter;
+import com.kmema.android.beatbox.Database.DataBaseContract;
 import com.kmema.android.beatbox.Database.SongDataModel;
 import com.kmema.android.beatbox.Services.MusicService;
 
 import java.util.ArrayList;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
-import io.reactivex.Observer;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.annotations.NonNull;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener, OnItemClick {
+        implements NavigationView.OnNavigationItemSelectedListener, OnItemClick, UpdateFromService, View.OnClickListener{
 
+    String SONG_NAME_KEY = "000";
+    String ALBUM_NAME_KEY = "001";
+    String ARTIST_NAME_KEY = "002";
+    String ALBUM_ART_KEY = "003";
+    String SONG_DURATION_KEY = "004";
+
+    @BindView(R.id.tvGlobalSongName)
     public TextView mGlobalSongName;
+
+    @BindView(R.id.tvGlobalAlbumName)
     public TextView mGlobalAlbumName;
+
+    @BindView(R.id.tvGlobalArtistName)
     public TextView mGlobalArtistName;
+
+    @BindView(R.id.imageGlobalAlbumArtImage)
     public ImageView mGlobalAlbumArt;
+
+    @BindView(R.id.recyclerView_albumSongs)
+    private RecyclerView recyclerView;
+
+    @BindView(R.id.fab)
+    private FloatingActionButton fab;
+
+    @BindView(R.id.btnPrevious)
+    private FloatingActionButton fabPrevious;
+
+    @BindView(R.id.btnPlay)
+    private  FloatingActionButton fabPlay;
+
+    @BindView(R.id.btnNext)
+    private FloatingActionButton fabNext;
+
+    @BindView(R.id.btnRandom)
+    private FloatingActionButton fabRandomButton;
+
+    @BindView(R.id.btnRepeat)
+    FloatingActionButton fabRepeat;
+
     private MusicService serviceMusic;
     private Intent playIntent;
-    private ArrayList<SongDataModel> mySongList;
-    //public TextView mGlobalSongDuration;
 
-
+    public TextView mGlobalSongDuration;
     private Cursor cursorAlbumArt = null;
     private Cursor cursor = null;
     private boolean permission = false;
     private RecyclerViewAdapter adapterRecyclerView;
     private final String[] STAR = {"*"};
-    private RecyclerView recyclerView;
 
+    ArrayList<SongDataModel> list = null;
+
+    private String albumArtValue;
+    private String songDurationValue;
+    private ContentResolver mContentResolver;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        ButterKnife.bind(this);
 
         animationBackground();
-        recyclerView = (RecyclerView) findViewById(R.id.recyclerView_albumSongs);
+
+        mContentResolver = getContentResolver();
+
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        mGlobalSongName = (TextView) findViewById(R.id.tvGlobalSongName);
-        mGlobalAlbumName = (TextView) findViewById(R.id.tvGlobalAlbumName);
-        mGlobalArtistName = (TextView) findViewById(R.id.tvGlobalArtistName);
-        mGlobalAlbumArt = (ImageView) findViewById(R.id.imageGlobalAlbumArtImage);
-//        mGlobalSongDuration = (TextView) findViewById(R.id.seekBar);
+        initBeatBox();
 
-
-        permission = checkAvailablePermission();
-
-
-        if (permission) {
-            getDataFromMemory();            //attaching data to recycler view
-            sendDatatoService();            //sending data(list of songs to process) to service to process
-        }
-        else {
-            Toast.makeText(this, "Need Permission to display songs", Toast.LENGTH_LONG).show();
-        }
-
-
-
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(this);
+
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+
+            }
+        });
+        fabPrevious.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                serviceMusic.previousSong();
+            }
+        });
+        fabNext.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                serviceMusic.nextSong();
+            }
+        });
+        fabPlay.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                serviceMusic.playPauseSong();
             }
         });
 
@@ -119,6 +156,61 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+    }
+
+
+    private void initBeatBox() {
+        permission = checkAvailablePermission();
+        if (permission) {
+            //if we have permission available we need to get data from sql database not from memory
+            list = getDataFromSQL();
+            if (!list.isEmpty())
+            {
+                adapterRecyclerView = new RecyclerViewAdapter(MainActivity.this, list, MainActivity.this);
+                recyclerView.setAdapter(adapterRecyclerView);
+                sendDatatoService();
+            }
+            else
+            {
+                Toast.makeText(this, "Refresh", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Toast.makeText(this, "Need Permission to display songs", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private ArrayList<SongDataModel> getDataFromSQL() {
+        ArrayList<SongDataModel> returnList = new ArrayList<>();
+
+        String[] projection = new String[]{DataBaseContract.ListOfSong._ID, DataBaseContract.ListOfSong.COLUMN_SONG_NAME,
+                DataBaseContract.ListOfSong.COLUMN_SONG_ALBUM_NAME, DataBaseContract.ListOfSong.COLUMN_SONG_ARTIST,
+                DataBaseContract.ListOfSong.COLUMN_SONG_ARTWOTK, DataBaseContract.ListOfSong.COLUMN_SONG_DURATION,
+                DataBaseContract.ListOfSong.COLUMN_SONG_FULL_PATH, DataBaseContract.ListOfSong.COLUMN_SONG_URI};
+
+        String order = new String(DataBaseContract.ListOfSong.COLUMN_SONG_NAME);
+        Cursor c = mContentResolver.query(DataBaseContract.ListOfSong.CONTENT_URI,projection,null,null,order);
+
+        if(c.moveToFirst()) {
+            do {
+                SongDataModel song = new SongDataModel();
+
+                song.setSongName(c.getString(c.getColumnIndex(DataBaseContract.ListOfSong.COLUMN_SONG_NAME)));
+                song.setSongAlbumName(c.getString(c.getColumnIndex(DataBaseContract.ListOfSong.COLUMN_SONG_ALBUM_NAME)));
+                song.setSongArtist(c.getString(c.getColumnIndex(DataBaseContract.ListOfSong.COLUMN_SONG_ARTIST)));
+                song.setAlbumArt(c.getString(c.getColumnIndex(DataBaseContract.ListOfSong.COLUMN_SONG_ARTWOTK)));
+                song.setSongDuration(c.getString(c.getColumnIndex(DataBaseContract.ListOfSong.COLUMN_SONG_DURATION)));
+                song.setSongFullPath(c.getString(c.getColumnIndex(DataBaseContract.ListOfSong.COLUMN_SONG_FULL_PATH)));
+                song.setSongUri(c.getString(c.getColumnIndex(DataBaseContract.ListOfSong.COLUMN_SONG_URI)));
+
+                returnList.add(song);
+            }while (c.moveToNext());
+
+            return returnList;
+        }else
+        {
+            Toast.makeText(this, "Refresh list", Toast.LENGTH_SHORT).show();
+            return null;
+        }
     }
 
 
@@ -170,7 +262,17 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.btnRefresh) {
-            checkAvailablePermission();
+
+            permission = checkAvailablePermission();
+            if(permission)
+            {
+                setDataToSQLite();
+                list = getDataFromSQL();
+                adapterRecyclerView = new RecyclerViewAdapter(MainActivity.this, list, MainActivity.this);
+                recyclerView.setAdapter(adapterRecyclerView);
+                sendDatatoService();
+            }
+
             //calling this function to refresh the song list
             // because we do not want to access/refresh memory with a user permission
             // Handle the camera action
@@ -192,9 +294,8 @@ public class MainActivity extends AppCompatActivity
 
 
     @SuppressWarnings("deprecation")
-    private ArrayList<SongDataModel> listAllSongs() { //Fetch path to all the files from internal & external storage and store it into songList
-
-        ArrayList<SongDataModel> songList = new ArrayList<>();
+    private boolean setDataToSQLite() { //Fetch path to all the files from internal & external storage and store it into songList
+        ContentValues mValues = new ContentValues();
 
         Uri allSongsUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
         String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
@@ -204,65 +305,108 @@ public class MainActivity extends AppCompatActivity
             if (cursor != null) {
                 if (cursor.moveToFirst()) {
                     do {
-                        SongDataModel song = new SongDataModel();
 
-                        String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME));
-                        String[] res = data.split("\\.");
-                        song.setSongName(res[0]);
-                        //Log.d("test",res[0] );
-                        song.setSongFullPath(cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA)));
-                        song.setSongId(cursor.getInt(cursor.getColumnIndex(MediaStore.Audio.Media._ID)));
-                        song.setSongAlbumName(cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM)));
+                        String songAlbum = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
+                        String songFullpath = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
 
-                        song.setSongUri(String.valueOf(ContentUris.withAppendedId(
-                                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                                cursor.getInt(cursor.getColumnIndex(MediaStore.Audio.Media._ID)))));
-
-                        String duration = getDuration(Integer.parseInt(cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DURATION))));
-
-                        song.setSongDuration(duration);
-
-                        String songArtist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-
-                        if (songArtist != null && songArtist !="")
-                            song.setSongArtist(songArtist);
-                        else
-                            song.setSongArtist("<No Info>");
+                        if (!checkDuplicateData(songAlbum,songFullpath)) {
 
 
-                        cursorAlbumArt = managedQuery(MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
-                                new String[]{MediaStore.Audio.Albums._ID, MediaStore.Audio.Albums.ALBUM_ART, MediaStore.Audio.Albums.ARTIST},
-                                MediaStore.Audio.Albums._ID + "=?",
-                                new String[]{String.valueOf(cursor.getInt(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID)))},
-                                null);
+                            String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME));
 
-                        if (cursorAlbumArt.getCount() > 0) {
-                            if (cursorAlbumArt.moveToFirst()) {
-                                String coverPath = null;
+                            String[] res = data.split("\\.");
 
-                                if (MediaStore.Audio.Albums.ALBUM_ART != null && MediaStore.Audio.Albums.ALBUM_ART != "")
-                                {coverPath = cursorAlbumArt.getString(cursorAlbumArt.getColumnIndex(MediaStore.Audio.Albums.ALBUM_ART));}
+                            mValues.put(DataBaseContract.ListOfSong.COLUMN_SONG_NAME, (res[0]));
 
-                                if (coverPath != null && coverPath != "") {
-                                    //Log.i("PATH::::", coverPath);
-                                    song.setAlbumArt(coverPath);
-                                } else {
-                                    song.setAlbumArt(null);
+                            mValues.put(DataBaseContract.ListOfSong.COLUMN_SONG_FULL_PATH,
+                                    cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA)));
+
+/*                        song.setSongId(cursor.getInt(cursor.getColumnIndex(MediaStore.Audio.Media._ID)));*/
+
+                            mValues.put(DataBaseContract.ListOfSong.COLUMN_SONG_ALBUM_NAME,
+                                    cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM)));
+
+
+                            mValues.put(DataBaseContract.ListOfSong.COLUMN_SONG_URI,
+                                    String.valueOf(ContentUris.withAppendedId(
+                                            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                                            cursor.getInt(cursor.getColumnIndex(MediaStore.Audio.Media._ID)))));
+
+                            mValues.put(DataBaseContract.ListOfSong.COLUMN_SONG_DURATION,
+                                    getDuration(Integer.parseInt(cursor.getString(cursor.getColumnIndex
+                                            (MediaStore.Audio.Media.DURATION)))));
+
+
+                            String songArtist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
+
+                            if (songArtist != null && songArtist != "")
+                                mValues.put(DataBaseContract.ListOfSong.COLUMN_SONG_ARTIST, songArtist);
+                            else
+                                mValues.put(DataBaseContract.ListOfSong.COLUMN_SONG_ARTIST, "<Unknown>");
+
+
+                            cursorAlbumArt = managedQuery(MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
+                                    new String[]{MediaStore.Audio.Albums._ID, MediaStore.Audio.Albums.ALBUM_ART, MediaStore.Audio.Albums.ARTIST},
+                                    MediaStore.Audio.Albums._ID + "=?",
+                                    new String[]{String.valueOf(cursor.getInt(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID)))},
+                                    null);
+
+                            if (cursorAlbumArt.getCount() > 0) {
+                                if (cursorAlbumArt.moveToFirst()) {
+                                    String coverPath = null;
+
+                                    if (MediaStore.Audio.Albums.ALBUM_ART != null && MediaStore.Audio.Albums.ALBUM_ART != "") {
+                                        coverPath = cursorAlbumArt.getString(cursorAlbumArt.getColumnIndex(MediaStore.Audio.Albums.ALBUM_ART));
+                                    }
+
+                                    if (coverPath != null && coverPath != "") {
+                                        //Log.i("PATH::::", coverPath);
+                                        mValues.put(DataBaseContract.ListOfSong.COLUMN_SONG_ARTWOTK, coverPath);
+                                    } else {
+                                        mValues.put(DataBaseContract.ListOfSong.COLUMN_SONG_ARTWOTK, "null");
+                                    }
                                 }
-                            }
-                        } else {
-                            Toast.makeText(this, "NULL C", Toast.LENGTH_SHORT).show();
-                        }
-                        //Toast.makeText(this, MediaStore.Audio.Albums.ALBUM_ART"", Toast.LENGTH_SHORT).show();
-                        songList.add(song);
-                    } while (cursor.moveToNext());
 
-                    return songList;
+                            } else {
+                                //Testing purpose
+                                Toast.makeText(this, "no Album Art", Toast.LENGTH_SHORT).show();
+                                mValues.put(DataBaseContract.ListOfSong.COLUMN_SONG_ARTWOTK, "null");
+                            }
+                            //Toast.makeText(this, MediaStore.Audio.Albums.ALBUM_ART"", Toast.LENGTH_SHORT).show();
+                            mContentResolver.insert(DataBaseContract.ListOfSong.CONTENT_URI, mValues);
+                        }
+                    }while (cursor.moveToNext());
+                    return true;
                 }
             }
-
         }
-        return null;
+        return false;
+    }
+
+    private boolean checkDuplicateData(String songAlbum, String songFullpath) {
+
+
+
+        String[] projection = new String[]{DataBaseContract.ListOfSong._ID, DataBaseContract.ListOfSong.COLUMN_SONG_NAME,
+                DataBaseContract.ListOfSong.COLUMN_SONG_ALBUM_NAME, DataBaseContract.ListOfSong.COLUMN_SONG_ARTIST,
+                DataBaseContract.ListOfSong.COLUMN_SONG_ARTWOTK, DataBaseContract.ListOfSong.COLUMN_SONG_DURATION,
+                DataBaseContract.ListOfSong.COLUMN_SONG_FULL_PATH, DataBaseContract.ListOfSong.COLUMN_SONG_URI};
+
+        String order = new String(DataBaseContract.ListOfSong.COLUMN_SONG_NAME);
+
+        String selection = DataBaseContract.ListOfSong.COLUMN_SONG_ALBUM_NAME +" = ? "+
+                DataBaseContract.ListOfSong.COLUMN_SONG_FULL_PATH + " = ?";
+
+        String[] selectionArgs = new String[]{songAlbum, songFullpath};
+        Cursor c = mContentResolver.query(DataBaseContract.ListOfSong.CONTENT_URI,projection,selection,selectionArgs,order);
+
+        if(c.moveToFirst()) {
+            if(c.getCount() > 0)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -292,80 +436,41 @@ public class MainActivity extends AppCompatActivity
 
     private boolean checkAvailablePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+
             if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                checkPermission();
+
+                Toast.makeText(this, "Click Yes To Display Songs", Toast.LENGTH_SHORT).show();
+                if (!Settings.System.canWrite(this)) {
+                    requestPermissions(new String[]{
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                            Manifest.permission.READ_EXTERNAL_STORAGE,
+                            Manifest.permission.INTERNET
+                    }, 2909);
+                }
             }
-            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                getDataFromMemory();
+            else {
                 return true;
-            } else {
-                return false;
             }
         } else {
             return true;
         }
+        return false;
     }
 
-    //check if user permissions are available
-    private void checkPermission() {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                Toast.makeText(this, "Provide access Read Songs", Toast.LENGTH_SHORT).show();
 
-                if (!Settings.System.canWrite(this)) {
-                    requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                            Manifest.permission.READ_EXTERNAL_STORAGE}, 2909);
-                }
-            } else {
-            }
-        } catch (SecurityException se) {
-            Log.d("FragmentCreate", "You don't have permissions");
-
-         /*   errortext.setVisibility(View.VISIBLE);
-            errortext.setText("Please provide Location permission to continue, Settings->Apps->RecommendedApp->Permissions");
-         */
-            Toast.makeText(this, "Storage permissions Needed", Toast.LENGTH_SHORT).show();
+    @Override
+    public void onupdateClick(int position, String songName, String albumName, String artistName, String albumArt, String songDuration) {
+        mGlobalSongName.setText(songName);
+        mGlobalSongName.setSelected(true);
+        mGlobalAlbumName.setText(albumName);
+        mGlobalArtistName.setText(artistName);
+        mGlobalArtistName.setSelected(true);
+        if (albumArt != null && albumArt != " ") {
+            Drawable img = Drawable.createFromPath(albumArt);
+            mGlobalAlbumArt.setImageDrawable(img);
+        } else {
+            mGlobalAlbumArt.setImageResource(R.drawable.beat_box_art);
         }
-    }
-
-
-    public void getDataFromMemory() {
-        Observable<ArrayList<SongDataModel>> mObservable = null;
-
-        mObservable.defer(new Callable<ObservableSource<ArrayList<SongDataModel>>>() {
-            @Override
-            public ObservableSource<ArrayList<SongDataModel>> call() throws Exception {
-                ArrayList<SongDataModel> data = listAllSongs();
-                return Observable.just(data);
-                }})
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<ArrayList<SongDataModel>>() {
-                    @Override
-                    public void onSubscribe(@NonNull Disposable d) {
-
-                    }
-
-                    @Override
-                    public void onNext(@NonNull ArrayList<SongDataModel> songDataModels) {
-                        Toast.makeText(MainActivity.this, "WorkingFine", Toast.LENGTH_SHORT).show();
-                        /*mySongList = songDataModels;*/
-
-                        adapterRecyclerView = new RecyclerViewAdapter(MainActivity.this, songDataModels, MainActivity.this);
-                        recyclerView.setAdapter(adapterRecyclerView);
-                    }
-
-                    @Override
-                    public void onError(@NonNull Throwable e) {
-                        Log.e("Observable",e.getMessage());
-                        Toast.makeText(MainActivity.this, "ERROR", Toast.LENGTH_SHORT).show();
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        Toast.makeText(serviceMusic, "Refreshed", Toast.LENGTH_SHORT).show();
-                    }
-                });
     }
 
 
@@ -377,7 +482,9 @@ public class MainActivity extends AppCompatActivity
         mGlobalAlbumName.setText(albumName);
         mGlobalArtistName.setText(artistName);
         mGlobalArtistName.setSelected(true);
-        //      mGlobalSongDuration.setText(songDuration);
+        albumArtValue = albumArt;
+        songDurationValue = songDuration;
+        //mGlobalSongDuration.setText(songDuration);
 
         if (albumArt != null && albumArt != " ") {
             Drawable img = Drawable.createFromPath(albumArt);
@@ -389,18 +496,12 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void playMyMusic(int position) {
-        serviceMusic.setSelectedSong(position, MusicService.NOTIFICATION_ID, this);
+        serviceMusic.setSelectedSong(position, MusicService.NOTIFICATION_ID, this, MainActivity.this);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-
-        /*if (playIntent == null) {
-            playIntent = new Intent(this, MusicService.class);
-            bindService(playIntent, musicConnection, Context.BIND_ABOVE_CLIENT);
-            startService(playIntent);
-        }*/
     }
 
     private void sendDatatoService() {
@@ -415,18 +516,52 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onResume() {
         super.onResume();
+        Log.e("Activity State:::","RESUME");
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.e("Activity State:::","RESTART");
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+
+        outState.putString(SONG_NAME_KEY,mGlobalSongName.getText().toString());
+        outState.putString(ALBUM_NAME_KEY,mGlobalAlbumName.getText().toString());
+        outState.putString(ARTIST_NAME_KEY,mGlobalArtistName.getText().toString());
+        outState.putString(ALBUM_ART_KEY, albumArtValue);
+        outState.putString(SONG_DURATION_KEY, songDurationValue);
+
+        super.onSaveInstanceState(outState);
 
     }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+
+        mGlobalSongName.setText(savedInstanceState.getString(SONG_NAME_KEY));
+        mGlobalArtistName.setText(savedInstanceState.getString(ARTIST_NAME_KEY));
+        mGlobalAlbumName.setText(savedInstanceState.getString(ALBUM_NAME_KEY));
+
+        String albumArtAddress = savedInstanceState.getString(ALBUM_ART_KEY);
+
+        if (albumArtAddress != null && albumArtAddress != " ") {
+            Drawable img = Drawable.createFromPath(albumArtAddress);
+            mGlobalAlbumArt.setImageDrawable(img);
+        } else {
+            mGlobalAlbumArt.setImageResource(R.drawable.beat_box_art);
+        }
+    }
+
 
     private final ServiceConnection musicConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-
             MusicService.PlayerBinder binder = (MusicService.PlayerBinder) service;
             serviceMusic = binder.getService();
-            if (permission)
-                serviceMusic.setListofSongs(listAllSongs());
-
+            serviceMusic.setListofSongs(list);
         }
 
         @Override
@@ -439,13 +574,9 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onStop() {
         super.onStop();
-
-/*        if (!cursor.isClosed())
-            cursor.close();
-
-        if(!cursorAlbumArt.isClosed())
-            cursorAlbumArt.close();*/
+        Log.e("Activity State:::","Stop");
     }
+
 
 
     @Override
@@ -459,6 +590,7 @@ public class MainActivity extends AppCompatActivity
         if (!cursorAlbumArt.isClosed())
             cursorAlbumArt.close();
 
+        Log.e("Activity State:::","Destroy");
     }
 
     @Override
@@ -467,5 +599,24 @@ public class MainActivity extends AppCompatActivity
 
     }
 
+    @Override
+    public void onClick(View view) {
 
+        switch (view.getId())
+        {
+            case (R.id.fab):
+                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+                break;
+
+            case (R.id.btnNext):
+                break;
+
+            case (R.id.btnPrevious):
+                break;
+
+            case (R.id.btnPlay):
+                break;
+        }
+    }
 }

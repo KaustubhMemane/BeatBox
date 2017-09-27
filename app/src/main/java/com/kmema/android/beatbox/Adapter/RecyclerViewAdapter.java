@@ -13,6 +13,7 @@ import com.kmema.android.beatbox.Database.SongDataModel;
 import com.kmema.android.beatbox.MainActivity;
 import com.kmema.android.beatbox.OnItemClick;
 import com.kmema.android.beatbox.R;
+import com.kmema.android.beatbox.UpdateFromService;
 
 import java.util.ArrayList;
 
@@ -113,6 +114,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                 {
                     return;
                 }
+
+
                 mCallBack.onClick(position,finalSongName, finalAlbumName, finalArtistName, finalAlbumArt, finalSongDuration);
             }
         });

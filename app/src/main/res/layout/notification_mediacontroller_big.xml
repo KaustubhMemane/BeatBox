@@ -1,0 +1,60 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:backgroundTintMode="src_over"
+    android:id="@+id/bigNotificationBackground"
+    >
+
+    <TextView
+        android:paddingTop="5dp"
+        android:layout_width="match_parent"
+        android:id="@+id/notify_song_name_bigName"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:text="Dummy File" />
+    <TextView
+        android:paddingTop="5dp"
+        android:layout_width="match_parent"
+        android:id="@+id/notify_albumName_big"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:text="Dummy File" />
+    <TextView
+        android:paddingTop="5dp"
+        android:layout_width="match_parent"
+        android:id="@+id/notify_ArtistName_big"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:text="Dummy File" />
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/notify_btn_previous"
+            android:layout_width="40dp"
+            android:layout_height="50dp"
+            android:background="@null"
+            android:src="@drawable/ic_action_previous" />
+
+        <ImageButton
+            android:id="@+id/notify_btn_pause"
+            android:layout_width="40dp"
+            android:layout_height="50dp"
+            android:background="@null"
+            android:src="@mipmap/play_market_logo" />
+
+        <ImageButton
+            android:id="@+id/notify_btn_next"
+            android:layout_width="40dp"
+            android:layout_height="50dp"
+            android:background="@null"
+            android:src="@drawable/ic_action_next" />
+
+    </LinearLayout>
+</LinearLayout>

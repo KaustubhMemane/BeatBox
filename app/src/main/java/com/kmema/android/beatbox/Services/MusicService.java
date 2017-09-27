@@ -24,6 +24,7 @@ import android.os.PowerManager;
 import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -36,19 +37,19 @@ import android.widget.Toast;
 
 import com.kmema.android.beatbox.Database.SongDataModel;
 import com.kmema.android.beatbox.MainActivity;
+import com.kmema.android.beatbox.OnItemClick;
 import com.kmema.android.beatbox.R;
+import com.kmema.android.beatbox.UpdateFromService;
 
 import java.util.ArrayList;
 
-/**
- * Created by kmema on 8/25/2017.
- */
+
 
 public class MusicService extends Service implements MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, MediaPlayer.OnCompletionListener,
         AudioManager.OnAudioFocusChangeListener {
 
 
-    private static final String CHANNEL_ID = "BeatBox";
+    private static final String CHANNEL_ID = "Beat-Box";
     private MediaPlayer mPlayer;
     private Uri mSongUri;
     private ArrayList<SongDataModel> mListOfSongs;
@@ -71,7 +72,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     public static int NOTIFICATION_ID = 11;
 
 
-    private static final String CHANNEL_NAME = "BeatBox_Channel";
+    private static final String CHANNEL_NAME = "BeatBoxChannel";
     private NotificationManager notificationManager;
     private NotificationChannel notificationChannel = null;
     private NotificationCompat.Builder notificationCompatBuilder;
@@ -81,7 +82,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     private PhoneStateListener phoneStateListener;
     private AudioManager mAudioManager;
     Bitmap bitmapImage = null;
-
+    private UpdateFromService mCallback;
     @Override
     public void onCreate() {
         super.onCreate();
@@ -116,9 +117,28 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     }
 
 
-    public void updateNotification(String updatedSongName) {
+    public void updateNotification(String updatedSongName,int songPos) {
+
+        setBitmapImage(mListOfSongs.get(songPos).getAlbumArt());
+        mNotification = notificationCompatBuilder
+                .setSmallIcon(R.drawable.play_logo)
+                .setLargeIcon(bitmapImage)
+                .setOngoing(true)
+                .setColorized(true)
+                .setColor(Color.RED)
+                .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
+                .setDefaults(Notification.DEFAULT_ALL)
+                .build();
+
         mNotification.contentView.setTextViewText(R.id.notify_song_name, updatedSongName);
         notificationManager.notify(NOTIFICATION_ID, mNotification);
+
+        String updatedAlbumName = mListOfSongs.get(songPos).getSongAlbumName();
+        String updatedArtistName = mListOfSongs.get(songPos).getSongArtist();
+        String updatedAlbumArt = mListOfSongs.get(songPos).getAlbumArt();
+        String updatedSongDuration = mListOfSongs.get(songPos).getSongDuration();
+
+        mCallback.onupdateClick(songPos,updatedSongName,updatedAlbumName,updatedArtistName,updatedAlbumArt,updatedSongDuration);
     }
 
 
@@ -227,7 +247,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         System.exit(0);
     }
 
-    private void previousSong() {
+    public void previousSong() {
         try {
             if (SONG_POS == 0) {
                 Toast.makeText(this, "No Previous Song", Toast.LENGTH_SHORT).show();
@@ -240,7 +260,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         }
     }
 
-    private void nextSong() {
+    public void nextSong() {
 
         if (SONG_POS > mListOfSongs.size()) {
             SONG_POS = 0;
@@ -255,12 +275,9 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         }
     }
 
+    public void startSong(Uri parseSongUri, String songName, int SONG_POS) {
 
-
-
-    private void startSong(Uri parseSongUri, String songName, int SONG_POS) {
-
-//        checkAudioFocus();
+        //checkAudioFocus();
 
         if(!successfullyRetrievedAudioFocus())
         {
@@ -276,8 +293,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
             Log.e("MUSIC SERVICE", "ERROR SETTING DATA SOURCE", e);
         }
         mPlayer.prepareAsync();
-
-        updateNotification(songName);
+        updateNotification(songName, SONG_POS);
     }
 
 
@@ -289,9 +305,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     }
 */
 
-    private void playPauseSong() {
-
-
+    public void playPauseSong() {
         if(mPlayer==null)
         {
             initMediaPlayer();
@@ -385,9 +399,9 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     }
 
-    public void setSelectedSong(int pos, int notification_id, Context context) {
+    public void setSelectedSong(int pos, int notification_id, Context context,UpdateFromService listner) {
         SONG_POS = pos;
-
+        this.mCallback = listner;
         NOTIFICATION_ID = notification_id;
 
         setSongURI(Uri.parse(mListOfSongs.get(SONG_POS).getSongUri()));
@@ -395,7 +409,6 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         setBitmapImage(mListOfSongs.get(SONG_POS).getAlbumArt());
 
         ShowNotification();
-
         startSong(Uri.parse(mListOfSongs.get(SONG_POS).getSongUri()), mListOfSongs.get(SONG_POS).getSongName(), SONG_POS);
     }
 
@@ -410,16 +423,17 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         Intent intentStop, intentPause, intentPrevious, intentNext;
 
         RemoteViews notificationView = new RemoteViews(getPackageName(), R.layout.notification_mediacontroller);
-
         notificationView.setTextViewText(R.id.notify_song_name, mListOfSongs.get(SONG_POS).getSongName());
 
         intentStop = new Intent(ACTION_STOP);
         pendingIntentStop = PendingIntent.getService(getApplicationContext(), REQUEST_CODE_STOP, intentStop, PendingIntent.FLAG_CANCEL_CURRENT);
+
 //        notificationView.setOnClickPendingIntent(R.id.notify_btn_stop, pendingIntentStop);
 
         intentPause = new Intent(ACTION_PAUSE);
         pendingIntent = PendingIntent.getService(getApplicationContext(), REQUEST_CODE_PAUSE, intentPause, PendingIntent.FLAG_UPDATE_CURRENT);
         notificationView.setOnClickPendingIntent(R.id.notify_btn_pause, pendingIntent);
+
 
         intentPrevious = new Intent(ACTION_PREVIOUS);
         pendingIntent = PendingIntent.getService(getApplicationContext(), REQUEST_CODE_PREVIOUS, intentPrevious, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -429,25 +443,32 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         pendingIntent = PendingIntent.getService(getApplicationContext(), REQUEST_CODE_NEXT, intentNext, PendingIntent.FLAG_UPDATE_CURRENT);
         notificationView.setOnClickPendingIntent(R.id.notify_btn_next, pendingIntent);
 
+
         //this intent and pending intent using to open the app when user click on Notification
         Intent notificationIntent = new Intent(this, MainActivity.class);
         PendingIntent notificationPendingIntent = PendingIntent.getActivity(this, NOTIFICATION_ID,
                 notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
 
+        Intent intent = new Intent(getBaseContext(), MainActivity.class);
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(getApplicationContext());
+        stackBuilder.addNextIntent(intent);
+        PendingIntent pendingIntent2 = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_CANCEL_CURRENT);
+
+
+
         mNotification = notificationCompatBuilder
-                .setSmallIcon(R.drawable.play_logo)
-                .setLargeIcon(bitmapImage)
-                .setCustomContentView(notificationView)
-                .setOngoing(true)
-                .setColorized(true)
                 .setColor(Color.RED)
-                .setDeleteIntent(pendingIntentStop)
-                .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
-                .setContentIntent(notificationPendingIntent)
-                .setContent(notificationView)
-                .setDefaults(Notification.DEFAULT_ALL)
                 .setColorized(true)
+                .setContent(notificationView)
+/*                .setContentIntent(pendingIntent2)*/   //opens activity when user click on notification
+                .setCustomContentView(notificationView)
+                .setDefaults(Notification.DEFAULT_ALL)
+                .setDeleteIntent(pendingIntentStop)
+                .setLargeIcon(bitmapImage)
+                .setOngoing(true)
+                .setSmallIcon(R.drawable.play_logo)
+                .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
                 .build();
 
         notificationManager.notify(NOTIFICATION_ID, mNotification);
@@ -458,9 +479,11 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             notificationChannel = new NotificationChannel(CHANNEL_ID,
                     CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH);
-            notificationChannel.setDescription("BeatBox Notification ");
+            notificationChannel.setVibrationPattern(new long[]{0});
+            notificationChannel.setDescription("BeatBox Notification");
             notificationChannel.enableLights(false);
             notificationChannel.enableVibration(false);
+            notificationChannel.canShowBadge();
             notificationChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             notificationManager.createNotificationChannel(notificationChannel);
         }

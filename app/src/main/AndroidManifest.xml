@@ -46,6 +46,13 @@
         </receiver>
 
 
+        <provider
+            android:authorities="com.kmema.android.beatbox.Database"
+            android:name=".Database.BeatContentProvider"
+            android:exported="false"/>
     </application>
+
+
+
 
 </manifest>
