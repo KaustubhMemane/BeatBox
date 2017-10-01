@@ -24,6 +24,10 @@ This Android mobile and Tablet application is still in production    phase, prob
 
 **Screenshots**
 ---------------
+
+
+![ezgif com-video-to-gif 1](https://user-images.githubusercontent.com/25395705/31052281-5d992eac-a64e-11e7-91dd-60075054c4d5.gif)
+
 ![BeatBox Screenshot 1](https://user-images.githubusercontent.com/25395705/30889889-6e015440-a2f7-11e7-80b3-6bab4ac46283.jpg)
 
 ![BeatBox Screenshot 2](https://user-images.githubusercontent.com/25395705/30889860-2d7fa37c-a2f7-11e7-8046-d1f6014163ca.jpg)
