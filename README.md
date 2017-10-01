@@ -8,11 +8,13 @@
  - Per-application volume, boost quiet apps
  - It can read the music from your SD card
  - It can show the album artwork or display default artwork
+ - Storing song list using SQLite
+ - User can share data with other app using Content Provider
  - It shows notification to control music without unlocking the phone
  - It can list songs by album or by author or just list all songs
  - It can go forward and backward in the current playlist
  - On finishing a song it will move to the next song
- - And many more features  I am introducing in this app in future
+ - And many more features I am introducing in this app in future
 
 **Getting Started**
 -------------------
