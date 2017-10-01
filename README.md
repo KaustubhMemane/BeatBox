@@ -14,7 +14,7 @@
  - It can list songs by album or by author or just list all songs
  - It can go forward and backward in the current playlist
  - On finishing a song it will move to the next song
- - And many more features I am introducing in this app in future
+ - introducing many new features and Architecture model as I am updating this project continuously in this app in future
 
 **Getting Started**
 -------------------
