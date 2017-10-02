@@ -16,6 +16,11 @@
  - On finishing a song it will move to the next song
  - introducing many new features and Architecture model as I am updating this project continuously in this app in future
 
+**Aim**
+---
+Instead of making app featured heavy and cluttered, my aim is to give great UX.
+
+
 **Getting Started**
 -------------------
 This sample uses the Gradle build system. To build this project, use the "gradlew build" command or use "Import Project" in Android Studio.
@@ -30,17 +35,13 @@ This Android mobile and Tablet application is still in production    phase, prob
 
 ![ezgif com-video-to-gif 1](https://user-images.githubusercontent.com/25395705/31052281-5d992eac-a64e-11e7-91dd-60075054c4d5.gif)
 
-![screener_1506839181784](https://user-images.githubusercontent.com/25395705/31052413-fe9b023c-a651-11e7-8741-819903210ed1.png)
+![BeatBox Screenshot 1](https://user-images.githubusercontent.com/25395705/30889889-6e015440-a2f7-11e7-80b3-6bab4ac46283.jpg)
 
 ![screener_1506839122992](https://user-images.githubusercontent.com/25395705/31052414-fea011d2-a651-11e7-8022-ea39a5393e02.png)
 
-![BeatBox Screenshot 1](https://user-images.githubusercontent.com/25395705/30889889-6e015440-a2f7-11e7-80b3-6bab4ac46283.jpg)
-
 ![BeatBox Screenshot 2](https://user-images.githubusercontent.com/25395705/30889860-2d7fa37c-a2f7-11e7-8046-d1f6014163ca.jpg)
 
-
-
-
+![screener_1506839181784](https://user-images.githubusercontent.com/25395705/31052413-fe9b023c-a651-11e7-8741-819903210ed1.png)
 
 
 **Find More Information on**
