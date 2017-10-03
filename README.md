@@ -14,6 +14,7 @@
  - It can list songs by album or by author or just list all songs
  - It can go forward and backward in the current playlist
  - On finishing a song it will move to the next song
+ - using CursorLoader to Load Data and to keep UI thread free for user interaction
  - introducing many new features and Architecture model as I am updating this project continuously in this app in future
 
 **Aim**
